@@ -7,4 +7,4 @@
 
 - XL320 Library for Arduino
 	- $ git clone https://github.com/hackerspace-adelaide/XL320.git
-  (can use in esp32 if change SoftwareSerial to HardwareSerial)
+    (can use in esp32 if change SoftwareSerial to HardwareSerial)
