@@ -8,7 +8,7 @@ void setup() {
 void loop() {
 
   //read photo senser
-  readvalue = analogRead(36);
+  readvalue = analogRead(A0);
   voltage = (float)readvalue / 4096 * 3.3;
   Serial.print("readValue:");
   Serial.print(readvalue);
