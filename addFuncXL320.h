@@ -2,6 +2,11 @@
 /*
 class XL320 {
 public:
-  void moveWheel(int id, int value);//add function
+	//add function
+	void moveWheel(int id, int value) {
+		//write XL_GOAL_SPEED_L to address, so same setJointSpeed of function
+		setJointSpeed(id, value);
+	}
 };
 */
+

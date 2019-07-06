@@ -10,8 +10,8 @@ int servoID = 5;
 bool servoDirection;//true = CCW, flase = CW
 
 #include <ESP32Servo.h>
-Servo sg90;
-int sg90Pin = A17;
+Servo sg90[2];
+int sg90Pin[2] = {A16, A17};
 int sg90Position = 0;
 
 int senserPin[2] = {A0, A3};
@@ -47,20 +47,10 @@ void setup() {
 void loop() {
   readSerialBT();
   countAngle();
-/*
-  if(moveStartSwitch()) {
-    if (addAngle != goalAngle) {
-      if(commandFlag[0]) startServo();
-    }
-    else {
-      if(commandFlag[1]) stopServo();
-    }
-  }
-*/
   if(moveStartSwitch()) {
     startServo();
   }
-  if (addAngle < goalAngle) {
+  if (addAngle <= goalAngle) {
     stopServo();
   }
 }
@@ -82,9 +72,11 @@ void init_xl320() {
   servoDirection = true;
 }
 void init_sg90() {
-  sg90.setPeriodHertz(50);
-  sg90.attach(sg90Pin, 500, 2400);
-  sg90.write(90);
+  for(int i = 0; i < 2; i++) {
+    sg90[i].setPeriodHertz(50);
+    sg90[i].attach(sg90Pin[i], 500, 2400);
+    sg90[i].write(90);
+  }
 }
 void init_sensor() {
   int initValue = analogRead(senserPin[0]);
@@ -157,7 +149,6 @@ void inputAngle(int value) {
   currentAngle += value;
   updateGoalAngle(value);
 }
-
 void updateGoalAngle(int value) {
   if(value > 0) {//right
     servoDirection = false;
@@ -180,18 +171,22 @@ bool moveStartSwitch() {
   if(beforSwitchFlag && !currentSwitchFlag)return true;
   return false;
 }
+
+//-----------------------------------------------
+//motor func
+
 void startServo() {
   if(servoDirection) {
-    sg90.write(90+45);
+    sg90[0].write(90-45);
+    sg90[1].write(90+45);
     delay(100);
     xl320.moveWheel(servoID, 1023);//CCW
-    // xl320.moveWheel(servoID, 500);//CCW
   }
   else {
-    sg90.write(90-45);
+    sg90[0].write(90+45);
+    sg90[1].write(90-45);
     delay(100);
     xl320.moveWheel(servoID, 2047);//CW
-    // xl320.moveWheel(servoID, 1524);//CW
   }
 }
 void stopServo() {
@@ -199,12 +194,15 @@ void stopServo() {
   goalAngle = 0;
   xl320.moveWheel(servoID, 0);
   if(currentAngle > 0) {
-    sg90.write(90+45);
+    sg90[0].write(90-45);
+    sg90[1].write(90+45);
   }
   else if(currentAngle < 0) {
-    sg90.write(90-45);
+    sg90[0].write(90+45);
+    sg90[1].write(90-45);
   }
   else {
-    sg90.write(90);
+    sg90[0].write(90);
+    sg90[1].write(90);
   }
 }
