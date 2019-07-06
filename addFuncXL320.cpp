@@ -1,4 +1,4 @@
-//additional to change a function in XL320.cpp
+//add to change a function in XL320.cpp
 /*
 //add function
 void XL320::moveWheel(int id, int value) {

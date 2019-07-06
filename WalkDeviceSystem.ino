@@ -7,7 +7,6 @@ uint8_t dataBT[BUFFER_SIZE];
 XL320 xl320;
 HardwareSerial Serial_default(0);//(RX, TX) (3, 1)
 int servoID = 5;
-bool commandFlag[2];
 bool servoDirection;//true = CCW, flase = CW
 
 #include <ESP32Servo.h>
@@ -17,6 +16,8 @@ int sg90Position = 0;
 
 int senserPin[2] = {A0, A3};
 bool countFlag;
+bool currentSwitchFlag;
+bool beforSwitchFlag;
 int currentAngle;
 int addAngle;
 int goalAngle;
@@ -29,9 +30,9 @@ void init_sensor();
 bool readSerialBT();
 void writeStringToDataBT(uint8_t buffer[], String str);
 
+void countAngle();
 void inputAngle(int value);
 void updateGoalAngle(int value);
-void countAngle();
 bool moveStartSwitch();
 void startServo();
 void stopServo();
@@ -46,6 +47,7 @@ void setup() {
 void loop() {
   readSerialBT();
   countAngle();
+/*
   if(moveStartSwitch()) {
     if (addAngle != goalAngle) {
       if(commandFlag[0]) startServo();
@@ -53,6 +55,13 @@ void loop() {
     else {
       if(commandFlag[1]) stopServo();
     }
+  }
+*/
+  if(moveStartSwitch()) {
+    startServo();
+  }
+  if (addAngle < goalAngle) {
+    stopServo();
   }
 }
 
@@ -70,8 +79,6 @@ void init_xl320() {
   xl320.TorqueON(servoID);
   xl320.LED(servoID, "g" );
   xl320.moveWheel(servoID, 0);
-  commandFlag[0] = true;
-  commandFlag[1] = false;
   servoDirection = true;
 }
 void init_sg90() {
@@ -86,6 +93,8 @@ void init_sensor() {
   goalAngle = 0;
   if(initValue > 500) countFlag = true;
   else countFlag = false;
+  currentSwitchFlag = false;
+  beforSwitchFlag = false;
 }
 
 //-----------------------------------------------
@@ -123,22 +132,6 @@ void writeStringToDataBT(uint8_t buffer[], String str) {
 //-----------------------------------------------
 //ctrl func
 
-void inputAngle(int value) {
-  currentAngle += value;
-  updateGoalAngle(value);
-}
-
-void updateGoalAngle(int value) {
-  if(value > 0) {//right
-    servoDirection = false;
-  }
-  else if(value < 0) {//left
-    servoDirection = true;
-    value *= -1;
-  }
-  goalAngle = value;
-}
-
 void countAngle() {
   int readValue = analogRead(senserPin[0]);
   if(!countFlag) {
@@ -160,14 +153,34 @@ void countAngle() {
   // Serial.print("currentAngle : ");
   // Serial.println(currentAngle);
 }
+void inputAngle(int value) {
+  currentAngle += value;
+  updateGoalAngle(value);
+}
+
+void updateGoalAngle(int value) {
+  if(value > 0) {//right
+    servoDirection = false;
+  }
+  else if(value < 0) {//left
+    servoDirection = true;
+    value *= -1;
+  }
+  goalAngle = value;
+}
 bool moveStartSwitch() {
   int readValue = analogRead(senserPin[1]);
-  if(readValue > 500) return false;//touch ground
-  else return true;
+  beforSwitchFlag = currentSwitchFlag;
+  if(readValue > 500) {
+	currentSwitchFlag = true;
+  }
+  else {
+	currentSwitchFlag = false;
+  }
+  if(beforSwitchFlag && !currentSwitchFlag)return true;
+  return false;
 }
 void startServo() {
-  commandFlag[0] = false;
-  commandFlag[1] = true;
   if(servoDirection) {
     sg90.write(90+45);
     delay(100);
@@ -182,8 +195,6 @@ void startServo() {
   }
 }
 void stopServo() {
-  commandFlag[0] = true;
-  commandFlag[1] = false;
   addAngle = 0;
   goalAngle = 0;
   xl320.moveWheel(servoID, 0);

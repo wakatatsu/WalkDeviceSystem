@@ -3,7 +3,7 @@
 
 追加使用ライブラリ
 - Servo Library for ESP32
-	- $ git clone https://github.com/jkb-git/ESP32Servo.git
+	- Download file (Ver 0.6.0) : https://www.arduinolibraries.info/libraries/esp32-servo
 
 - XL320 Library for Arduino
 	- $ git clone https://github.com/hackerspace-adelaide/XL320.git

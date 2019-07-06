@@ -1,4 +1,4 @@
-//additional to change a function in XL320.h
+//add to change a function in XL320.h
 /*
 class XL320 {
 public:
