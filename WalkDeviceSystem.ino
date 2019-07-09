@@ -2,12 +2,14 @@
 #define BUFFER_SIZE 100
 BluetoothSerial SerialBT;
 uint8_t dataBT[BUFFER_SIZE];
+bool dataBTFlag;
 
 #include "XL320.h"
 XL320 xl320;
 HardwareSerial Serial_default(0);//(RX, TX) (3, 1)
 int servoID = 5;
 bool servoDirection;//true = CCW, flase = CW
+bool moveFlag;
 
 #include <ESP32Servo.h>
 Servo sg90[2];
@@ -41,18 +43,32 @@ void stopServo();
 void setup() {
   Serial.begin(115200);
   SerialBT.begin("ESP32");
+  dataBTFlag = false;
   init_all();
 }
 
 void loop() {
-  readSerialBT();
-  countAngle();
-  if(moveStartSwitch()) {
+  if(readSerialBT() && !dataBTFlag) {
+    dataBTFlag = true;
+  }
+
+  if(moveFlag) countAngle();
+  if(moveStartSwitch() && dataBTFlag) {
     startServo();
+    moveFlag = true;
   }
-  if (addAngle <= goalAngle) {
+  if (moveFlag && (addAngle >= goalAngle)) {
     stopServo();
+    moveFlag = false;
+    dataBTFlag = false;
   }
+
+  Serial.print("addAngle : ");
+  Serial.print(addAngle);
+  Serial.print(", goalAngle : ");
+  Serial.println(goalAngle);
+  // Serial.print("currentAngle : ");
+  // Serial.println(currentAngle);
 }
 
 //-----------------------------------------------
@@ -70,6 +86,7 @@ void init_xl320() {
   xl320.LED(servoID, "g" );
   xl320.moveWheel(servoID, 0);
   servoDirection = true;
+  moveFlag = false;
 }
 void init_sg90() {
   for(int i = 0; i < 2; i++) {
@@ -117,7 +134,7 @@ void writeStringToDataBT(uint8_t buffer[], String str) {
     }
     buffer[data_length-1] = '\n';
     buffer[data_length] = '\0';
-    SerialBT.write(dataBT, data_length);//write BluetoothSerial
+    SerialBT.write(buffer, data_length);//write BluetoothSerial
   }
 }
 
@@ -129,21 +146,15 @@ void countAngle() {
   if(!countFlag) {
     if(readValue > 500) {//white
       countFlag = true;
-      addAngle += 1;
+      addAngle += 2;
     }
   }
   else {
     if(readValue < 500) {//black
       countFlag = false;
-      addAngle += 1;
+      addAngle += 2;
     }
   }
-  Serial.print("addAngle : ");
-  Serial.print(addAngle);
-  Serial.print(", goalAngle : ");
-  Serial.println(goalAngle);
-  // Serial.print("currentAngle : ");
-  // Serial.println(currentAngle);
 }
 void inputAngle(int value) {
   currentAngle += value;
@@ -162,7 +173,7 @@ void updateGoalAngle(int value) {
 bool moveStartSwitch() {
   int readValue = analogRead(senserPin[1]);
   beforSwitchFlag = currentSwitchFlag;
-  if(readValue > 500) {
+  if(readValue > 300) {
 	currentSwitchFlag = true;
   }
   else {
@@ -177,32 +188,32 @@ bool moveStartSwitch() {
 
 void startServo() {
   if(servoDirection) {
-    sg90[0].write(90-45);
-    sg90[1].write(90+45);
-    delay(100);
+    sg90[0].write(90-40);
+    sg90[1].write(90+40);
+    delay(200);
     xl320.moveWheel(servoID, 1023);//CCW
   }
   else {
-    sg90[0].write(90+45);
-    sg90[1].write(90-45);
-    delay(100);
+    sg90[0].write(90+40);
+    sg90[1].write(90-40);
+    delay(200);
     xl320.moveWheel(servoID, 2047);//CW
   }
 }
 void stopServo() {
-  addAngle = 0;
-  goalAngle = 0;
   xl320.moveWheel(servoID, 0);
   if(currentAngle > 0) {
-    sg90[0].write(90-45);
-    sg90[1].write(90+45);
+    sg90[0].write(90-40);
+    sg90[1].write(90+40);
   }
   else if(currentAngle < 0) {
-    sg90[0].write(90+45);
-    sg90[1].write(90-45);
+    sg90[0].write(90+40);
+    sg90[1].write(90-40);
   }
   else {
     sg90[0].write(90);
     sg90[1].write(90);
   }
+  addAngle = 0;
+  goalAngle = 0;
 }
