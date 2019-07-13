@@ -1,25 +1,30 @@
 #include "BluetoothSerial.h"
 #define BUFFER_SIZE 100
+#define PHOTOSENSOR_THRESHOLD 500
+#define SWITCH_THRESHOLD 300
+#define INCREASE_ANGLE 2
+//Bluetooth Serial
 BluetoothSerial SerialBT;
 uint8_t dataBT[BUFFER_SIZE];
 bool dataBTFlag;
-
+//XL320
 #include "XL320.h"
 XL320 xl320;
 HardwareSerial Serial_default(0);//(RX, TX) (3, 1)
 int servoID = 5;
 bool servoDirection;//true = CCW, flase = CW
 bool moveFlag;
-
+//sg90
 #include <ESP32Servo.h>
 Servo sg90[2];
 int sg90Pin[2] = {A16, A17};
-int sg90Position = 0;
-
+int sg90Position[2];
+//photo sensor and switch
 int senserPin[2] = {A0, A3};
 bool countFlag;
 bool currentSwitchFlag;
 bool beforSwitchFlag;
+//angle
 int currentAngle;
 int addAngle;
 int goalAngle;
@@ -93,6 +98,7 @@ void init_sg90() {
     sg90[i].setPeriodHertz(50);
     sg90[i].attach(sg90Pin[i], 500, 2400);
     sg90[i].write(90);
+    sg90Position[i] = 0;
   }
 }
 void init_sensor() {
@@ -144,15 +150,15 @@ void writeStringToDataBT(uint8_t buffer[], String str) {
 void countAngle() {
   int readValue = analogRead(senserPin[0]);
   if(!countFlag) {
-    if(readValue > 500) {//white
+    if(readValue > PHOTOSENSOR_THRESHOLD) {//white
       countFlag = true;
-      addAngle += 2;
+      addAngle += INCREASE_ANGLE;
     }
   }
   else {
-    if(readValue < 500) {//black
+    if(readValue < PHOTOSENSOR_THRESHOLD) {//black
       countFlag = false;
-      addAngle += 2;
+      addAngle += INCREASE_ANGLE;
     }
   }
 }
@@ -173,12 +179,7 @@ void updateGoalAngle(int value) {
 bool moveStartSwitch() {
   int readValue = analogRead(senserPin[1]);
   beforSwitchFlag = currentSwitchFlag;
-  if(readValue > 300) {
-	currentSwitchFlag = true;
-  }
-  else {
-	currentSwitchFlag = false;
-  }
+  currentSwitchFlag = readValue > SWITCH_THRESHOLD ? true : false;
   if(beforSwitchFlag && !currentSwitchFlag)return true;
   return false;
 }
