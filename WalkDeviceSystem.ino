@@ -19,7 +19,7 @@ bool moveFlag[2];//[0] = right, [1] = left
 Servo sg90[4];
 int sg90Pin[4] = {A4, A18, A5, A19};//{[0],[2]} = right, {[1],[3]} = left
 //photo sensor and switch
-int senserPin[4] = {A0, A3, A6, A7};//{[0],[2]} = PotoSensor, {[1],[3]} = TacktSwitch
+int senserPin[4] = {A0, A6, A3, A7};//{[0],[2]} = PotoSensor, {[1],[3]} = TacktSwitch
 bool countFlag[2];
 bool currentSwitchFlag[2];
 bool beforSwitchFlag[2];
