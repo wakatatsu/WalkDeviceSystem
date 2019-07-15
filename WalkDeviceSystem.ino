@@ -52,7 +52,6 @@ void setup() {
 }
 
 void loop() {
-
   for(int i = 0; i < 2; i++) {
     if(readSerialBT(i) && dataBTFlag) {
       dataBTFlag = false;
@@ -68,7 +67,6 @@ void loop() {
       moveFlag[i] = false;
     }
   }
-
   // Serial.print("addAngle : ");
   // Serial.print(addAngle);
   // Serial.print(", goalAngle : ");
@@ -105,7 +103,7 @@ void init_sg90() {
 }
 void init_sensor() {
   int initValue;
-  for(int i = 0; i < 2; i++) {
+  for(int i = 0; i < 4; i+=2) {
     initValue = analogRead(senserPin[i]);
     if(initValue > PHOTOSENSOR_THRESHOLD) countFlag[i] = true;//white
     else countFlag[i] = false;//black
