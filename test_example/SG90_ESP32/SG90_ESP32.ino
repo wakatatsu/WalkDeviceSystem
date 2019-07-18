@@ -1,11 +1,13 @@
 #include <ESP32Servo.h>
-Servo sg90;
-int sg90Pin = A16;
+Servo sg90[4];
+int sg90Pin[4] = {A4, A18, A5, A19};
 int sg90Position = 0;
 
 void init_sg90() {
-  sg90.setPeriodHertz(50);
-  sg90.attach(sg90Pin, 500, 2400);
+  for(int i = 0; i < 4; i++) {
+    sg90[i].setPeriodHertz(50);
+    sg90[i].attach(sg90Pin[i], 500, 2400);
+  }
 }
 
 void setup() {
@@ -20,6 +22,14 @@ void loop() {
   //   sg90.write(sg90Position);
   //   delay(100);
   // }
-  sg90.write(90+40);
+  for(int i = 0; i < 2; i++) {
+    sg90[i].write(90-40);
+    sg90[i+1].write(90+40);
+  }
+  delay(1000);
+  // for(int i = 0; i < 4; i++) {
+  //   sg90[i].write(90-40);
+  // }
+  // delay(1000);
 
 }

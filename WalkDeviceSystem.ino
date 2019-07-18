@@ -1,12 +1,12 @@
 #include "BluetoothSerial.h"
 #define BUFFER_SIZE 100
-#define PHOTOSENSOR_THRESHOLD 500
-#define SWITCH_THRESHOLD 300
+#define PHOTOSENSOR_THRESHOLD 100
+#define SWITCH_THRESHOLD 4096/2
 #define INCREASE_ANGLE 2
 //Bluetooth Serial
 BluetoothSerial SerialBT;
 uint8_t dataBT[BUFFER_SIZE];//bluetooth data buffer
-bool dataBTFlag;
+bool dataBTFlag[2];
 //XL320
 #include "XL320.h"
 XL320 xl320;
@@ -19,26 +19,29 @@ bool moveFlag[2];//[0] = right, [1] = left
 Servo sg90[4];
 int sg90Pin[4] = {A4, A18, A5, A19};//{[0],[2]} = right, {[1],[3]} = left
 //photo sensor and switch
-int senserPin[4] = {A0, A6, A3, A7};//{[0],[2]} = PotoSensor, {[1],[3]} = TacktSwitch
+int sensorPin[4] = {A0, A6, A3, A7};//{[0],[2]} = PotoSensor, {[1],[3]} = TacktSwitch
 bool countFlag[2];
 bool currentSwitchFlag[2];
 bool beforSwitchFlag[2];
+int countWalk;
 //angle
-int currentAngle[2];
-int addAngle;
-int goalAngle;
+int angleData[10] = {0,2,2,2,2,2,2,2,2,2};
+int currentAngle;
+int addAngle[2];
+int goalAngle[2];
 
 void init_all();
 void init_xl320();
 void init_sg90();
 void init_sensor();
 
-bool readSerialBT(int arrayNum);
+bool readSerialBT();
 void writeStringToDataBT(uint8_t buffer[], String str);
 
-void countAngle(int arrayNum);
-void inputAngle(int arrayNum, int value);
+void nextAngleData();
+void inputAngle(int value);
 void updateGoalAngle(int value);
+void countAngle(int arrayNum);
 bool moveStartSwitch(int arrayNum);
 void startServo(int arrayNum);
 void stopServo(int arrayNum);
@@ -47,32 +50,37 @@ void stopServo(int arrayNum);
 void setup() {
   Serial.begin(115200);
   SerialBT.begin("ESP32");
-  dataBTFlag = true;
+  dataBTFlag[0] = true;
+  dataBTFlag[1] = true;
   init_all();
 }
 
 void loop() {
   for(int i = 0; i < 2; i++) {
-    if(readSerialBT(i) && dataBTFlag) {
-      dataBTFlag = false;
+    // if(dataBTFlag[0] == true && dataBTFlag[1] == true) {
+    // nextAngleData();
+    // }
+    if(readSerialBT() && dataBTFlag[i]) {
+      dataBTFlag[0] = false;
+      dataBTFlag[1] = false;
     }
     if(moveFlag[i]) countAngle(i);
-    if(moveStartSwitch(i) && !dataBTFlag) {
+    if(moveStartSwitch(i) && !dataBTFlag[i]) {
       startServo(i);
       moveFlag[i] = true;
     }
-    if (moveFlag[i] && (addAngle >= goalAngle)) {
+    if (moveFlag[i] && (addAngle[i] >= goalAngle[i])) {
       stopServo(i);
-      dataBTFlag = true;
+      dataBTFlag[i] = true;
       moveFlag[i] = false;
     }
   }
   // Serial.print("addAngle : ");
-  // Serial.print(addAngle);
+  // Serial.print(addAngle[0]);
   // Serial.print(", goalAngle : ");
-  // Serial.println(goalAngle);
+  // Serial.println(goalAngle[0]);
   // Serial.print("currentAngle : ");
-  // Serial.println(currentAngle);
+  // Serial.println(currentAngle[1]);
 }
 
 //-----------------------------------------------
@@ -103,27 +111,27 @@ void init_sg90() {
 }
 void init_sensor() {
   int initValue;
-  for(int i = 0; i < 4; i+=2) {
-    initValue = analogRead(senserPin[i]);
-    if(initValue > PHOTOSENSOR_THRESHOLD) countFlag[i] = true;//white
-    else countFlag[i] = false;//black
-    currentAngle[i] = 0;
+  for(int i = 0; i < 2; i++) {
+    initValue = (i == 0) ? analogRead(sensorPin[i]) : analogRead(sensorPin[i+1]);
+    countFlag[i] = (initValue > PHOTOSENSOR_THRESHOLD) ? true : false;//white:black
     currentSwitchFlag[i] = false;
     beforSwitchFlag[i] = false;
+    addAngle[i] = 0;
+    goalAngle[i] = 0;
   }
-  addAngle = 0;
-  goalAngle = 0;
+  currentAngle = 0;
+  countWalk = 0;
 }
 
 //-----------------------------------------------
 //bluetoothSerial func
 
-bool readSerialBT(int arrayNum) {
+bool readSerialBT() {
   String str_buf;
   while(1) {
     if(SerialBT.available() > 0) {
       str_buf = SerialBT.readStringUntil('\n');//read BluetoothSerial buffer
-      inputAngle(arrayNum, str_buf.toInt());
+      inputAngle(str_buf.toInt());
       //writeStringToDataBT(dataBT, str_buf);
       break;
     }
@@ -150,23 +158,15 @@ void writeStringToDataBT(uint8_t buffer[], String str) {
 //-----------------------------------------------
 //ctrl func
 
-void countAngle(int arrayNum) {
-  int readValue = analogRead(senserPin[arrayNum]);
-  if(!countFlag[arrayNum]) {
-    if(readValue > PHOTOSENSOR_THRESHOLD) {//white
-      countFlag[arrayNum] = true;
-      addAngle += INCREASE_ANGLE;
-    }
-  }
-  else {
-    if(readValue < PHOTOSENSOR_THRESHOLD) {//black
-      countFlag[arrayNum] = false;
-      addAngle += INCREASE_ANGLE;
-    }
-  }
+void nextAngleData() {
+  int value = angleData[countWalk/2];
+  inputAngle(value);
+  dataBTFlag[0] = false;
+  dataBTFlag[1] = false;
 }
-void inputAngle(int arrayNum, int value) {
-  currentAngle[arrayNum] += value;
+
+void inputAngle(int value) {
+  currentAngle += value;
   updateGoalAngle(value);
 }
 void updateGoalAngle(int value) {
@@ -177,14 +177,34 @@ void updateGoalAngle(int value) {
     servoDirection = true;
     value *= -1;
   }
-  goalAngle = value;
+  for(int i = 0; i < 2; i++) goalAngle[i] = value;
+}
+void countAngle(int arrayNum) {
+  int readValue;
+  readValue = (arrayNum == 0) ? analogRead(sensorPin[arrayNum]) : analogRead(sensorPin[arrayNum+1]);
+  Serial.print("port ");
+  Serial.print(arrayNum);
+  Serial.print(", value = ");
+  Serial.println(readValue);
+  if(!countFlag[arrayNum]) {
+    if(readValue > PHOTOSENSOR_THRESHOLD) {//white
+      countFlag[arrayNum] = true;
+      addAngle[arrayNum] += INCREASE_ANGLE;
+    }
+  }
+  else {
+    if(readValue < PHOTOSENSOR_THRESHOLD) {//black
+      countFlag[arrayNum] = false;
+      addAngle[arrayNum] += INCREASE_ANGLE;
+    }
+  }
 }
 bool moveStartSwitch(int arrayNum) {
-  int readValue = analogRead(senserPin[arrayNum+2]);
-  beforSwitchFlag[arrayNum+2] = currentSwitchFlag[arrayNum+2];
-  currentSwitchFlag[arrayNum+2] = readValue > SWITCH_THRESHOLD ? true : false;
-  if(beforSwitchFlag[arrayNum+2] && !currentSwitchFlag[arrayNum+2])return true;
-  return false;
+  countWalk++;
+  int readValue = (arrayNum == 0) ? analogRead(sensorPin[arrayNum+1]) : analogRead(sensorPin[arrayNum+2]);
+  beforSwitchFlag[arrayNum] = currentSwitchFlag[arrayNum];
+  currentSwitchFlag[arrayNum] = (readValue > SWITCH_THRESHOLD) ? true : false;
+  return (beforSwitchFlag[arrayNum] && !currentSwitchFlag[arrayNum]) ? true : false;
 }
 
 //-----------------------------------------------
@@ -192,35 +212,39 @@ bool moveStartSwitch(int arrayNum) {
 
 void startServo(int arrayNum) {
   if(servoDirection) {
-    sg90[arrayNum].write(90-40);
-    sg90[arrayNum+2].write(90+40);
-    delay(150);
-    xl320.moveWheel(servoID[arrayNum], 1023);//CCW
-    xl320.moveWheel(servoID[arrayNum+2], 2047);//CW
-  }
-  else {
     sg90[arrayNum].write(90+40);
     sg90[arrayNum+2].write(90-40);
     delay(150);
-    xl320.moveWheel(servoID[arrayNum], 2047);//CW
-    xl320.moveWheel(servoID[arrayNum+2], 1023);//CCW
+    // xl320.moveWheel(servoID[arrayNum], 1023);//CCW
+    xl320.moveWheel(servoID[arrayNum], 700);//CCW
+    // xl320.moveWheel(servoID[arrayNum+2], 2047);//CW
+    xl320.moveWheel(servoID[arrayNum+2], 1724);//CW
+  }
+  else {
+    sg90[arrayNum].write(90-40);
+    sg90[arrayNum+2].write(90+40);
+    delay(150);
+    // xl320.moveWheel(servoID[arrayNum], 2047);//CW
+    xl320.moveWheel(servoID[arrayNum], 1724);//CW
+    // xl320.moveWheel(servoID[arrayNum+2], 1023);//CCW
+    xl320.moveWheel(servoID[arrayNum+2], 700);//CCW
   }
 }
 void stopServo(int arrayNum) {
   xl320.moveWheel(servoID[arrayNum], 0);
   xl320.moveWheel(servoID[arrayNum+2], 0);
   if(currentAngle > 0) {
-    sg90[arrayNum].write(90-40);
-    sg90[arrayNum+2].write(90+40);
-  }
-  else if(currentAngle < 0) {
     sg90[arrayNum].write(90+40);
     sg90[arrayNum+2].write(90-40);
+  }
+  else if(currentAngle < 0) {
+    sg90[arrayNum].write(90-40);
+    sg90[arrayNum+2].write(90+40);
   }
   else {
     sg90[arrayNum].write(90);
     sg90[arrayNum+2].write(90);
   }
-  addAngle = 0;
-  goalAngle = 0;
+  addAngle[arrayNum] = 0;
+  goalAngle[arrayNum] = 0;
 }
