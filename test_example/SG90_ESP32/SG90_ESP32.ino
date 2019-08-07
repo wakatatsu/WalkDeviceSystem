@@ -24,7 +24,7 @@ void loop() {
   // }
   for(int i = 0; i < 2; i++) {
     sg90[i].write(90-40);
-    sg90[i+1].write(90+40);
+    sg90[i+2].write(90+40);
   }
   delay(1000);
   // for(int i = 0; i < 4; i++) {

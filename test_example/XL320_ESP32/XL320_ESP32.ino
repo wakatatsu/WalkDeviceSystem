@@ -74,13 +74,25 @@ void loop() {
   // if(readSerialBT()) {
   //   xl320.moveJoint(servoID, xl320Position);
   // }
+
+  // for(int i = 0; i < 2; i++) {
+  //   xl320.moveWheel(servoID[i], 1023);
+  //   xl320.moveWheel(servoID[i+2], 2047);
+  //   delay(1000);
+  //   xl320.moveWheel(servoID[i], 0);
+  //   xl320.moveWheel(servoID[i+2], 0);
+  // }
   for(int i = 0; i < 2; i++) {
     xl320.moveWheel(servoID[i], 1023);
+    delay(1000);
     xl320.moveWheel(servoID[i+2], 2047);
     delay(1000);
+  }
+  delay(5000);
+  for(int i = 0; i < 2; i++) {
     xl320.moveWheel(servoID[i], 0);
     xl320.moveWheel(servoID[i+2], 0);
   }
-  delay(100);
+  delay(1000);
 
 }
