@@ -1,4 +1,4 @@
-int sensorPin[4] = {A0, A6, A3, A7};//{[0],[2]} = PotoSensor, {[1],[3]} = TacktSwitch
+int sensorPin[4] = {A4, A5, A3, A7};//{[0],[2]} = PotoSensor, {[1],[3]} = TacktSwitch
 int readValue[4];
 float voltage;
 
@@ -14,12 +14,13 @@ void loop() {
   }
   Serial.print("PhotoSensor:");
   Serial.print(readValue[0]);
-  Serial.print(", ");
-  Serial.print(readValue[2]);
-  Serial.print("  SwitchSensor:");
-  Serial.print(readValue[1]);
-  Serial.print(", ");
-  Serial.println(readValue[3]);
+  // Serial.print(", ");
+  // Serial.print(readValue[2]);
+  // Serial.print("  SwitchSensor:");
+  // Serial.print(readValue[1]);
+  // Serial.print(", ");
+  // Serial.print(readValue[3]);
+  Serial.println();
   delay(1);
 
   //read photo senser

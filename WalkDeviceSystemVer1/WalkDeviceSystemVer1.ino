@@ -8,8 +8,8 @@ uint8_t dataBT[BUFFER_SIZE];//bluetooth data buffer
 bool dataBTFlag[2];
 
 //XL320
-#include "XL320.h"
-XL320 xl320;
+#include "addFuncXL320.hpp"
+AddFuncXL320 xl320;
 HardwareSerial Serial_default(0);//(RX, TX) (3, 1)
 int servoID[4] = {5, 7, 6, 8};
 bool servoDirection;//true = CCW, false = CW
