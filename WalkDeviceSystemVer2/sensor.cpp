@@ -5,7 +5,7 @@ Sensor::Sensor() {
 }
 
 void Sensor::init_rotary_encoder() {
-  for(int i = 0; i < 2; i++) {
+  for(int i = 0; i < ROTARY_ENCODER_NUM; i++) {
     pcnt_config[i].pulse_gpio_num = rotary_encoderPin[i];
     pcnt_config[i].ctrl_gpio_num = rotary_encoderPin[i+2];
     pcnt_config[i].lctrl_mode = PCNT_MODE_REVERSE;//制御ピンがLOWの時カウンタの振る舞い
@@ -32,6 +32,6 @@ int Sensor::getCountValue(int num) {
   return count;
 }
 
-int Sensor::getDegValue(int num) {
-  return dpc * getCountValue(num);
+float Sensor::getDegValue(int num) {
+  return getCountValue(num) * rotary_encoderDPC / gearDPC * rootDPC;
 }

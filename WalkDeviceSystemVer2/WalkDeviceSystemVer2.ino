@@ -9,26 +9,31 @@ BluetoothSerial SerialBT;
 uint8_t dataBT[BUFFER_SIZE];//bluetooth data buffer
 bool dataBTFlag = false;
 
+//Sensor and Motor Object
 Sensor* sensor;
 Motor* motor;
 
 // //photo sensor
-const int photoThreshold[2] = {100, 100};
-bool currentPhotoFlag[2];
-bool beforPhotoFlag[2];
+const int photoThreshold[2] = {10, 10};
+bool currentPhotoFlag[2] = {false, false};
+bool beforPhotoFlag[2] = {false, false};
 int walkCount;
 
 //angle
-int currentAngle[2];
-int goalAngle[2];
+int currentAngle[2] = {0, 0};
+int goalAngle[2] = {0, 0};
 bool endFlag[2] = {false, false};
+bool moveFlag[2] = {false, false};
+
+void init_value();
 
 bool readSerialBT();
 void writeStringToDataBT(uint8_t buffer[], String str);
 
 void setGoalAngle(int value);
 void setDirection(int value);
-bool moveStartSwitch(int arrayNum);
+bool swingJudge(int arrayNum);
+bool moveStopJudge(int arrayNum);
 
 
 void setup() {
@@ -37,30 +42,36 @@ void setup() {
   sensor = new Sensor();
   motor = new Motor();
 }
-//
+
 void loop() {
-
-  //read angle data
-  if(readSerialBT()) {
-    dataBTFlag = true;
-  }
-
-  //run sysytem
-  while(dataBTFlag) {
-    for(int i = 0; i < 2; i++) {
-      if(moveStartSwitch(i)) {
-        motor->startServo(i);
-        endFlag[i] = false;
-      }
-      if (goalAngle[i]-2 >= sensor->getDegValue(i) &&
-          goalAngle[i]+2 <= sensor->getDegValue(i)) {
-        motor->stopServo(i);
-        endFlag[i] = true;
-      }
+  if(!dataBTFlag) {
+    if(readSerialBT()) {//set goal value if read
+      Serial.println("read");
+      dataBTFlag = true;
     }
-    if(endFlag[0] && endFlag[1]) {
-      dataBTFlag = false;
-      break;
+  }
+  else {
+    for(int i = 0; i < 2; i++) {
+      if(!moveFlag[i]) {
+        if(swingJudge(i)) {
+          Serial.println("start");
+          motor->startServo(i);
+          moveFlag[i] = true;
+        }
+      }
+      else {
+        if(moveStopJudge(i)) {
+          Serial.println("stop");
+          motor->stopServo(i);
+          moveFlag[i] = false;
+          endFlag[i] = true;
+        }
+      }
+      if(endFlag[0] && endFlag[1]) {
+        endFlag[0] = false;
+        endFlag[1] = false;
+        dataBTFlag = false;
+      }
     }
   }
 }
@@ -74,7 +85,7 @@ bool readSerialBT() {
     if(SerialBT.available() > 0) {
       str_buf = SerialBT.readStringUntil('\n');//read BluetoothSerial buffer
       setGoalAngle(str_buf.toInt());
-      //writeStringToDataBT(dataBT, str_buf);
+      // writeStringToDataBT(dataBT, str_buf);
       break;
     }
     else {
@@ -97,31 +108,42 @@ void writeStringToDataBT(uint8_t buffer[], String str) {
   }
 }
 
-// //-----------------------------------------------
+//-----------------------------------------------
+
 void setGoalAngle(int value) {
-  goalAngle[0] = currentAngle[0] + value;
-  goalAngle[1] = currentAngle[1] + value;
   setDirection(value);
+  goalAngle[0] = value;
+  goalAngle[1] = value;
 }
+
 void setDirection(int value) {
-  if(value > 0) {//right
+  if(value - goalAngle[0] > 0) {//right
     motor->setServoDirection(false);
   }
-  else if(value < 0) {//left
+  else if(value - goalAngle[0] < 0) {//left
     motor->setServoDirection(true);
   }
 }
 
-bool moveStartSwitch(int arrayNum) {
+bool swingJudge(int arrayNum) {
   int readValue = sensor->readPhotoValue(arrayNum);
+  // Serial.println(readValue);
   beforPhotoFlag[arrayNum] = currentPhotoFlag[arrayNum];
   currentPhotoFlag[arrayNum] = (readValue > photoThreshold[arrayNum]) ? true : false;
   if(beforPhotoFlag[arrayNum] && !currentPhotoFlag[arrayNum]) {
     walkCount++;
-    if(walkCount==10) walkCount = 0;
+    if(walkCount>=10) walkCount = 0;
     return true;
   }
-  else {
-    return false;
+  return false;
+}
+
+bool moveStopJudge(int arrayNum) {
+  float sensorAngle = sensor->getDegValue(arrayNum);
+  // Serial.println(sensorAngle);
+  if(sensorAngle >= goalAngle[arrayNum] - 1 &&
+  sensorAngle <= goalAngle[arrayNum] + 1) {
+    return true;
   }
+  return false;
 }

@@ -19,7 +19,7 @@ void init_xl320() {
   for(int i = 0; i < 2; i++) {
     xl320.TorqueON(servoID[i]);
     xl320.LED(servoID[i], "g" );
-    xl320.moveWheel(servoID[i], 0);
+    xl320.setJointSpeed(servoID[i], 0);
   }
 }
 
@@ -31,15 +31,15 @@ void setup() {
 }
 
 void loop() {
-  xl320.moveWheel(servoID[0],1023);
-  xl320.moveWheel(servoID[1],1023);
+  xl320.setJointSpeed(servoID[0],1023);
+  xl320.setJointSpeed(servoID[1],1023);
   delay(100);
-  xl320.moveWheel(254,0);
+  xl320.setJointSpeed(254,0);
   delay(1000);
-  xl320.moveWheel(servoID[0],2047);
-  xl320.moveWheel(servoID[1],2047);
+  xl320.setJointSpeed(servoID[0],2047);
+  xl320.setJointSpeed(servoID[1],2047);
   delay(100);
-  xl320.moveWheel(254,0);
+  xl320.setJointSpeed(254,0);
   delay(1000);
 
 }
