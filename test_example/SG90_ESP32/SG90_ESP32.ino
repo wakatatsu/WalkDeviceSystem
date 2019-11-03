@@ -10,7 +10,7 @@ void init_sg90() {
     sg90[i].attach(sg90Pin[i], 500, 2400);
     sg90[i].write(180);
   }
-  delay(5000);
+  delay(100);
 }
 
 void setup() {
@@ -25,7 +25,7 @@ void loop() {
   }
   delay(2000);
   for(int i = 0; i < 2; i++) {
-    sg90[i].write(160);
+    sg90[i].write(180);
   }
   delay(2000);
 
