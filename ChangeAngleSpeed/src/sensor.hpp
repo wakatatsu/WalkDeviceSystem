@@ -10,8 +10,7 @@
 class Sensor {
 
 public:
-  Sensor();
-  Sensor(const int pins[], int footType);
+  Sensor(const int pins[], const char* footType);
   int readPhotoValue();
   int getCountValue();
   float getDegValue();
@@ -22,23 +21,24 @@ public:
 
 private:
   //foot type
-  const int type;
+  const char* type;
   //photo sensor
   const int photo_sensorPin;
-  const int photoThreshold = 50;
+  const int photoThreshold = 10;
   bool currentPhotoFlag = false;
   bool beforPhotoFlag = false;
   int currentAngle = 0;
   int goalAngle = 0;
   bool moveFlag = false;
-  void init_photo_sensor(int pin);
   //rotary encoder
   const int rotary_encoderPin[2];
+  pcnt_config_t pcnt_config;
+  int16_t count = 0;
   const float rotary_encoderDPC = 360 / 30;//deg per count of rotary encoder
   const float gearDPC = 360 / 18;//deg per count of gear
   const float rootDPC = 360 / 180;//deg per count of root
-  // int16_t count;
-  void init_rotary_encoder(pcnt_unit_t pcnt_unit, int pinA, int pinB);
+
+  void init_rotary_encoder();
 
 };
 

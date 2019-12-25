@@ -7,8 +7,7 @@
 class FootSystem {
 
 public:
-    FootSystem(const int pins[]);
-    FootSystem(const int pin[], int footType);
+    FootSystem(const int pin[], const char* footType);
     void runDebug();
     void run();
     bool setAngle(int angle);

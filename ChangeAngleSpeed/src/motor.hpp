@@ -3,7 +3,6 @@
 
 #define BROADCAST_ID 254
 
-#include "Arduino.h"
 #include <HardwareSerial.h>
 #include <addFuncXL320.hpp>
 #include "ESP32Servo.h"
@@ -17,14 +16,14 @@ public:
   //SG90
   Servo sg90;
 
-  Motor(const int pin[], int footType);
+  Motor(const int pin[], const char* footType);
   void setServoDirection(bool direction);
   void startServo();
   void stopServo();
 
 private:
   //foot type
-  const int type;
+  const char* type;
   //XL320
   const int id[4] = {5, 7, 6, 8};//Not used but no problem. If use, use to debug.
   bool servoDirection;

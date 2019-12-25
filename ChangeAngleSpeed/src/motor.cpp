@@ -1,7 +1,7 @@
 #include "motor.hpp"
 
-Motor::Motor(const int pins[], int footType) : type(footType), sg90Pin(pins[3]) {
-  ServoSerial = (type == 0) ? new HardwareSerial(2) : new HardwareSerial(0);
+Motor::Motor(const int pins[], const char* footType) : type(footType), sg90Pin(pins[3]) {
+  ServoSerial = !strcmp(type, "right") ? new HardwareSerial(2) : new HardwareSerial(0);
   init_xl320();
   init_sg90();
 }
@@ -26,6 +26,7 @@ void Motor::setServoDirection(bool direction) {
 
 void Motor::startServo() {
   sg90.write(90);
+  delay(1);
   if(servoDirection) {
     xl320.moveWheel(BROADCAST_ID, 2047);
   }

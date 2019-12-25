@@ -1,3 +1,4 @@
+
 /*
 input position value is sent value by bluetoothSerial.
 0 <= position value <= 1023
@@ -26,7 +27,9 @@ void init_xl320() {
     xl320.TorqueON(servoID[i]);
     xl320.LED(servoID[i], "g" );
     xl320.setJointSpeed(servoID[i], 0);
+    delay(500);
   }
+  
 }
 
 void init_sg90() {
@@ -34,16 +37,16 @@ void init_sg90() {
     sg90[i].setPeriodHertz(50);
     sg90[i].attach(sg90Pin[i], 500, 2400);
     sg90[i].write(90);
+    delay(500);
   }
-  delay(1000);
 }
 
 
 void setup() {
   Serial.begin(115200);
   //SerialBT.begin("ESP32");
-  init_xl320();
   init_sg90();
+  init_xl320();
 }
 
 void loop() {
@@ -52,9 +55,18 @@ void loop() {
 //    delay(10);
 //  }
   xl320.setJointSpeed(254,1023);
+  sg90[0].write(90);
+  sg90[1].write(90);
+  delay(3000);
+  sg90[0].write(180);
+  sg90[1].write(180);
   delay(3000);
   xl320.setJointSpeed(254,0);
   delay(3000);
+//  xl320.setJointSpeed(254,2047);
+//  delay(3000);
+//  xl320.setJointSpeed(254,0);
+//  delay(3000);
 
 //  for(int i = 2; i < 4; i++) {
 //    xl320.setJointSpeed(servoID[i],1023);
